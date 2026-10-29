@@ -5,7 +5,8 @@
 //   group:<name>[~re]  series in one Valet group, optionally only those whose label matches re
 //   last:<id,id>       label and last observations of Valet series
 //   vector:<id,id>     StatCan vector title and last observations
-import { httpJson } from './lib/util.mjs';
+//   fred:<id,id>       FRED series: last observations (public CSV)
+import { httpJson, httpText } from './lib/util.mjs';
 
 const VALET = 'https://www.bankofcanada.ca/valet';
 const WDS = 'https://www150.statcan.gc.ca/t1/wds/rest';
@@ -43,7 +44,12 @@ export async function probe(spec) {
           const pts = data?.[0]?.object?.vectorDataPoint ?? [];
           console.log(`» v${v}\t${info?.[0]?.object?.SeriesTitleEn}\t${info?.[0]?.object?.productId}\t${pts.map((p) => `${p.refPer}=${p.value}`).join(' ')}`);
         }
-      } else console.log('  unknown probe command');
+      } else if (kind === 'fred') {
+        for (const id of arg.split(',')) {
+          const rows = (await httpText(`https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}`)).trim().split(/\r?\n/);
+          console.log(`» ${id}\t${rows[0]}\t${rows.length - 1} rows\t${rows.slice(-3).join(' ')}`);
+        }
+      } else console.log('» unknown probe command');
     } catch (e) {
       console.log('» ERROR ' + e.message);
     }
