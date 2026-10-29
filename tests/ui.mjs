@@ -129,6 +129,8 @@ for (const [vpName, viewport, extra] of [['phone', { width: 390, height: 844 }, 
   const doc = JSON.parse(readFileSync(path, 'utf8'));
   doc.series.ca_policy.points = [['2025-10-29', 2.25], ['2026-10-27', 2.25], ['2026-10-28', 2.25]];
   doc.series.ca_policy.asOf = '2026-10-28';
+  doc.series.ca_prime.points = [['2026-10-14', 4.45], ['2026-10-21', 4.45], ['2026-10-28', 4.45]];
+  doc.series.ca_prime.asOf = '2026-10-28';
   writeFileSync(path, JSON.stringify(doc));
   console.log('\nfeed lagging the announcement');
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -138,6 +140,8 @@ for (const [vpName, viewport, extra] of [['phone', { width: 390, height: 844 }, 
   const txt = await page.locator('main').innerText();
   check(/2\.50%/.test(txt) && /▲ \+0\.25 pts on Oct 28/.test(txt), 'hero shows announced 2.50% and the +0.25 move');
   check(/still shows 2\.25%/.test(txt) && !/Data feed shows/.test(txt), 'pending note shown instead of the mismatch error');
+  const heroTxt = await page.locator('.hero').innerText();
+  check(/Prime rate\s+4\.70%/.test(heroTxt) && !/4\.45/.test(heroTxt), 'hero shows the announced 4.70% prime, not the feed\'s 4.45%');
   await page.goto(`${base}#/canada`, { waitUntil: 'networkidle' });
   check(/Policy rate\s+2\.50%/.test(await page.locator('main').innerText()), 'Canada chart legend shows 2.50%');
   await ctx.close();

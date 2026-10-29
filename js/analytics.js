@@ -111,25 +111,38 @@ export function isStale(meta, today) {
 
 // ---- Policy-rate reconciliation ------------------------------------------------------------
 
-// Compare the data feed's latest policy rate with the announcement we were told about.
-// The Bank of Canada feed can lag a decision by a day or more, sometimes carrying the OLD rate forward under the new date,
+// Compare a data feed's latest value with what an announcement says it should now be.
+// Feeds can lag a decision by a day or more, sometimes carrying the OLD value forward under the new date,
 // so a disagreement within `lagDays` of the announcement is 'pending' (feed behind), not a contradiction.
-export function reconcilePolicy(policyPts, ann, lagDays = 3) {
-  const l = last(policyPts);
-  if (!ann) return { status: 'none', feed: l };
+export function reconcileSeries(pts, date, expected, lagDays = 3) {
+  const l = last(pts);
   if (!l) return { status: 'nodata', feed: null };
-  if (l[1] === ann.newRate) return { status: 'match', feed: l };
-  const lag = (toMs(l[0]) - toMs(ann.date)) / 864e5;
+  if (l[1] === expected) return { status: 'match', feed: l };
+  const lag = (toMs(l[0]) - toMs(date)) / 864e5;
   return { status: lag <= lagDays ? 'pending' : 'mismatch', feed: l };
 }
 
-// While the feed is behind, replace its stale observations from the announcement date on with the announced rate.
-export function effectivePolicy(policyPts, ann) {
-  const rec = reconcilePolicy(policyPts, ann);
-  if (rec.status !== 'pending') return policyPts;
-  const out = [...policyPts.filter((p) => p[0] < ann.date), [ann.date, ann.newRate]];
-  if (rec.feed[0] > ann.date) out.push([rec.feed[0], ann.newRate]);
+// While the feed is behind, replace its stale observations from the announcement date on with the announced value.
+export function overlaySeries(pts, date, expected, lagDays = 3) {
+  const rec = reconcileSeries(pts, date, expected, lagDays);
+  if (rec.status !== 'pending') return pts;
+  const out = [...pts.filter((p) => p[0] < date), [date, expected]];
+  if (rec.feed[0] > date) out.push([rec.feed[0], expected]);
   return out;
+}
+
+export function reconcilePolicy(policyPts, ann, lagDays = 3) {
+  if (!ann) return { status: 'none', feed: last(policyPts) };
+  return reconcileSeries(policyPts, ann.date, ann.newRate, lagDays);
+}
+
+export function effectivePolicy(policyPts, ann) {
+  return ann ? overlaySeries(policyPts, ann.date, ann.newRate) : policyPts;
+}
+
+// Same treatment for the prime rate announced alongside the policy rate.
+export function effectivePrime(primePts, ann) {
+  return ann && ann.newPrime != null ? overlaySeries(primePts, ann.date, ann.newPrime) : primePts;
 }
 
 // ---- Hike cycles & backtest ----------------------------------------------------------------

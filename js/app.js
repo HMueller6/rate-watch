@@ -88,6 +88,8 @@ function buildSeries() {
   for (const [k, v] of Object.entries((st.doc && st.doc.series) || {})) S[k] = v.points;
   S.ca_policy_feed = S.ca_policy || [];
   if (S.ca_policy && st.ann) S.ca_policy = A.effectivePolicy(S.ca_policy, st.ann);
+  S.ca_prime_feed = S.ca_prime || [];
+  if (S.ca_prime && st.ann) S.ca_prime = A.effectivePrime(S.ca_prime, st.ann);
   const set = (k, f) => { try { const v = f(); if (v && v.length) S[k] = v; } catch { /* leave undefined */ } };
   if (S.ca_cpi_index) set('ca_cpi_yoy', () => A.yoy(S.ca_cpi_index));
   if (S.ca_nhpi) set('ca_nhpi_yoy', () => A.yoy(S.ca_nhpi));
@@ -273,7 +275,8 @@ function hero() {
   const mv = pol.length ? A.lastMove(pol) : ann ? { date: ann.date, from: ann.previousRate, to: ann.newRate } : null;
   let prime = null, primeNote = '';
   const pr = get('ca_prime');
-  if (ann && (!pr.length || A.last(pr)[0] < ann.date)) { prime = ann.newPrime; primeNote = `announced ${dateShort(ann.date)}`; }
+  const primeFeedBehind = ann && ann.newPrime != null && A.reconcileSeries(get('ca_prime_feed'), ann.date, ann.newPrime).status !== 'match';
+  if (ann && (!pr.length || primeFeedBehind)) { prime = ann.newPrime; primeNote = `announced ${dateShort(ann.date)}; data feed not updated yet`; }
   else if (pr.length) { prime = A.last(pr)[1]; primeNote = `as of ${dateShort(A.last(pr)[0])}`; }
   const nextDate = ann && ann.nextDecision;
   const dn = nextDate ? daysUntil(nextDate) : null;

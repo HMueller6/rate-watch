@@ -298,3 +298,14 @@ test('staleness uses realistic publication lags', () => {
   assert.equal(st('2026-10-28', 'd', { stale: true }), true); // refresh failed, old copy kept
   assert.equal(A.isStale(null, today), false);
 });
+
+test('prime rate gets the same lag handling as the policy rate', () => {
+  const ann = { date: '2026-10-28', newRate: 2.5, newPrime: 4.7 };
+  const weekly = [['2026-10-07', 4.45], ['2026-10-14', 4.45], ['2026-10-21', 4.45]];
+  assert.deepEqual(A.last(A.effectivePrime(weekly, ann)), ['2026-10-28', 4.7]);            // feed older than the announcement
+  const carried = [...weekly, ['2026-10-28', 4.45]];                                       // old value carried under the new date
+  assert.deepEqual(A.last(A.effectivePrime(carried, ann)), ['2026-10-28', 4.7]);
+  assert.equal(A.effectivePrime([...weekly, ['2026-10-28', 4.7]], ann).length, 4);          // feed caught up: untouched
+  assert.equal(A.effectivePrime(weekly, { date: '2026-10-28', newRate: 2.5 }), weekly);    // announcement without prime: untouched
+  assert.equal(A.reconcileSeries([...weekly, ['2026-11-12', 4.45]], '2026-10-28', 4.7).status, 'mismatch');
+});
