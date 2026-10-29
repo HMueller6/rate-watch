@@ -84,7 +84,8 @@ test('policy reconciliation: match, pending (feed lagging) and mismatch', () => 
   const ann = { date: '2026-10-28', newRate: 2.5 };
   assert.equal(A.reconcilePolicy([['2025-10-29', 2.25], ['2026-10-28', 2.5]], ann).status, 'match');
   assert.equal(A.reconcilePolicy([['2025-10-29', 2.25], ['2026-10-27', 2.25]], ann).status, 'pending');
-  assert.equal(A.reconcilePolicy([['2025-10-29', 2.25], ['2026-10-28', 2.25]], ann).status, 'mismatch');
+  assert.equal(A.reconcilePolicy([['2025-10-29', 2.25], ['2026-10-28', 2.25]], ann).status, 'pending'); // same-day old value = feed lag
+  assert.equal(A.reconcilePolicy([['2025-10-29', 2.25], ['2026-11-05', 2.25]], ann).status, 'mismatch'); // still old a week later
   assert.equal(A.reconcilePolicy([], ann).status, 'nodata');
   const eff = A.effectivePolicy([['2025-10-29', 2.25], ['2026-10-27', 2.25]], ann);
   assert.deepEqual(A.last(eff), ['2026-10-28', 2.5]);
@@ -266,4 +267,21 @@ test('Valet series labelled just "Total" are identified by their description', a
     // the catalog uses /non-mortgage loans/ for that one, and /mortgages/ (plural) for the mortgage one
     await assert.rejects(fetchValet({ ids: ['V36857'], expect: /non-mortgage loans/i }, '1990-01-01'), /does not match/);
   } finally { restore(); }
+});
+
+test('a feed that carries the old rate forward under the announcement date is pending, not a mismatch', () => {
+  const ann = { date: '2026-10-28', newRate: 2.5 };
+  const feed = [['2025-10-29', 2.25], ['2026-10-27', 2.25], ['2026-10-28', 2.25]]; // what the real feed looked like on Oct 29
+  assert.equal(A.reconcilePolicy(feed, ann).status, 'pending');
+  const eff = A.effectivePolicy(feed, ann);
+  assert.deepEqual(A.last(eff), ['2026-10-28', 2.5]);
+  assert.deepEqual(A.lastMove(eff), { date: '2026-10-28', from: 2.25, to: 2.5 });
+  assert.equal(eff.filter((p) => p[0] === '2026-10-28').length, 1);
+  // still wrong three days later: that is a real disagreement
+  assert.equal(A.reconcilePolicy([...feed, ['2026-11-04', 2.25]], ann).status, 'mismatch');
+  // feed later catches up
+  assert.equal(A.reconcilePolicy([...feed.slice(0, 2), ['2026-10-28', 2.5]], ann).status, 'match');
+  // feed behind by a couple of days with later (still old) dates: overlay carries the new rate to the feed's last date
+  const eff2 = A.effectivePolicy([...feed, ['2026-10-30', 2.25]], ann);
+  assert.deepEqual(A.last(eff2), ['2026-10-30', 2.5]);
 });

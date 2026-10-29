@@ -98,19 +98,24 @@ export function diff(pts) {
 // ---- Policy-rate reconciliation ------------------------------------------------------------
 
 // Compare the data feed's latest policy rate with the announcement we were told about.
-// 'pending' = feed hasn't caught up yet (feed older than announcement) - we then overlay the announcement.
-export function reconcilePolicy(policyPts, ann) {
+// The Bank of Canada feed can lag a decision by a day or more, sometimes carrying the OLD rate forward under the new date,
+// so a disagreement within `lagDays` of the announcement is 'pending' (feed behind), not a contradiction.
+export function reconcilePolicy(policyPts, ann, lagDays = 3) {
   const l = last(policyPts);
   if (!ann) return { status: 'none', feed: l };
   if (!l) return { status: 'nodata', feed: null };
-  if (l[0] < ann.date) return { status: l[1] === ann.newRate ? 'match' : 'pending', feed: l };
-  return { status: l[1] === ann.newRate ? 'match' : 'mismatch', feed: l };
+  if (l[1] === ann.newRate) return { status: 'match', feed: l };
+  const lag = (toMs(l[0]) - toMs(ann.date)) / 864e5;
+  return { status: lag <= lagDays ? 'pending' : 'mismatch', feed: l };
 }
 
+// While the feed is behind, replace its stale observations from the announcement date on with the announced rate.
 export function effectivePolicy(policyPts, ann) {
   const rec = reconcilePolicy(policyPts, ann);
-  if (rec.status === 'pending') return [...policyPts, [ann.date, ann.newRate]];
-  return policyPts;
+  if (rec.status !== 'pending') return policyPts;
+  const out = [...policyPts.filter((p) => p[0] < ann.date), [ann.date, ann.newRate]];
+  if (rec.feed[0] > ann.date) out.push([rec.feed[0], ann.newRate]);
+  return out;
 }
 
 // ---- Hike cycles & backtest ----------------------------------------------------------------

@@ -98,6 +98,27 @@ for (const [vpName, viewport, extra] of [['phone', { width: 390, height: 844 }, 
     await ctx.close();
   }
 }
+// feed lagging the announcement: it shows 2.25% dated Oct 28; the app must show the announced 2.50% with a 'pending' note, not an error
+{
+  const { readFileSync, writeFileSync } = await import('node:fs');
+  const path = join(app, 'data/dashboard.json');
+  const doc = JSON.parse(readFileSync(path, 'utf8'));
+  doc.series.ca_policy.points = [['2025-10-29', 2.25], ['2026-10-27', 2.25], ['2026-10-28', 2.25]];
+  doc.series.ca_policy.asOf = '2026-10-28';
+  writeFileSync(path, JSON.stringify(doc));
+  console.log('\nfeed lagging the announcement');
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const page = await ctx.newPage();
+  await page.goto(`${base}#/overview`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('main .card');
+  const txt = await page.locator('main').innerText();
+  check(/2\.50%/.test(txt) && /▲ \+0\.25 pts on Oct 28/.test(txt), 'hero shows announced 2.50% and the +0.25 move');
+  check(/still shows 2\.25%/.test(txt) && !/Data feed shows/.test(txt), 'pending note shown instead of the mismatch error');
+  await page.goto(`${base}#/canada`, { waitUntil: 'networkidle' });
+  check(/Policy rate\s+2\.50%/.test(await page.locator('main').innerText()), 'Canada chart legend shows 2.50%');
+  await ctx.close();
+}
+
 // first-run state: no dashboard.json yet -> honest empty state, announcement still shown, nothing invented
 {
   rmSync(join(app, 'data/dashboard.json'));

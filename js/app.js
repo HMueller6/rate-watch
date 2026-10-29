@@ -264,7 +264,7 @@ function reconcileChip() {
   const feed = rec.feed;
   const map = {
     match: ['good', '✓ Matches Bank of Canada data'],
-    pending: ['warn', '⏳ Bank of Canada data feed has not updated yet; showing the announced rate'],
+    pending: ['warn', `⏳ Bank of Canada data feed still shows ${feed ? feed[1].toFixed(2) : '?'}% (${feed ? dateShort(feed[0]) : ''}); using the announced ${ann.newRate.toFixed(2)}% until it catches up`],
     mismatch: ['bad', `⚠ Data feed shows ${feed ? feed[1].toFixed(2) : '?'}%, announcement says ${ann.newRate.toFixed(2)}%. Check data/announcement.json`],
     nodata: ['', 'Announced rate (no data feed loaded)'],
     none: ['', ''],
