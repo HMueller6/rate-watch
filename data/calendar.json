@@ -1,0 +1,7 @@
+{
+  "note": "Hand-maintained. Add or fix dates here; confirm against bankofcanada.ca and federalreserve.gov.",
+  "events": [
+    { "date": "2026-12-09", "who": "Bank of Canada", "what": "Interest rate announcement", "detail": "Confirmed in the Oct 28 announcement" },
+    { "date": "2026-12-09", "who": "US Federal Reserve", "what": "FOMC decision (meeting Dec 8-9)", "detail": "From the published 2026 FOMC calendar; verify" }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "note": "Reference roster, not live data. Roles only; no holdings figures are stated here. The live US ownership split comes from FRED on the Bonds tab.",
+  "groups": [
+    {
+      "title": "Canada",
+      "players": [
+        { "name": "Bank of Canada", "role": "Sets the overnight target rate and can buy or sell Government of Canada securities for its own balance sheet.", "why": "Its policy rate anchors the front end of the curve; prime and variable mortgages move with it." },
+        { "name": "Government of Canada (Finance Canada)", "role": "Issuer of the benchmark 2, 3, 5, 7, 10 and 30-year bonds.", "why": "Auction sizes and the deficit shape supply, which feeds into yields." },
+        { "name": "Bank-owned dealers", "role": "RBC Capital Markets, TD Securities, BMO Capital Markets, Scotiabank, CIBC Capital Markets and National Bank Financial are among the main distributors and market-makers.", "why": "They bid at auctions and quote the market that mortgage pricing is based on." },
+        { "name": "Pension and public investors", "role": "CPP Investments, CDPQ, Ontario Teachers', OMERS and similar long-horizon funds.", "why": "Large, patient buyers of long bonds; their demand affects the long end." },
+        { "name": "CMHC and Canada Mortgage Bonds", "role": "CMHC runs the Canada Mortgage Bond programme that funds insured mortgages.", "why": "CMB spreads over Government of Canada bonds feed through to insured fixed mortgage rates." },
+        { "name": "Foreign investors, insurers and asset managers", "role": "Hold a large share of Government of Canada debt alongside domestic institutions.", "why": "Foreign demand and global rate moves, especially US Treasuries, spill into Canadian yields." }
+      ]
+    },
+    {
+      "title": "United States",
+      "players": [
+        { "name": "Federal Reserve", "role": "FOMC sets the fed funds target range; the Fed also holds Treasuries on its balance sheet.", "why": "Policy path and balance-sheet runoff or purchases move Treasury yields, which Canadian yields track." },
+        { "name": "US Treasury", "role": "Issuer of Treasury bills, notes and bonds.", "why": "Refunding announcements and auction sizes drive supply." },
+        { "name": "Primary dealers", "role": "A couple of dozen banks and broker-dealers designated by the New York Fed that must bid at Treasury auctions and trade with the Fed.", "why": "They intermediate the market and absorb supply that end investors do not take." },
+        { "name": "Foreign official and private holders", "role": "Japan, the UK and China have been among the largest foreign holders.", "why": "Shifts in foreign demand can move term premia." },
+        { "name": "Money-market funds, mutual funds, pensions, banks", "role": "The domestic private holders of Treasuries.", "why": "Their allocation changes with yields, deposit flows and regulation." }
+      ]
+    }
+  ]
+}

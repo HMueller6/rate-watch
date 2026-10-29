@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-28",
+  "title": "Bank of Canada raises its policy rate by 25 bps",
+  "previousRate": 2.25,
+  "newRate": 2.5,
+  "previousPrime": 4.45,
+  "newPrime": 4.7,
+  "nextDecision": "2026-12-09",
+  "points": [
+    "First hike since July 2023, ending seven straight holds.",
+    "Prime moves 4.45% → 4.70%, so variable-rate borrowers pay about 0.25 pts more. Fixed rates barely moved on the day: they follow bond yields, not the policy rate.",
+    "Reason: persistent inflation from energy costs threatens to spread more broadly. Macklem said further hikes might be needed but the Bank will \"proceed carefully\".",
+    "Outlook: CPI averaging about 3% through 2027, back to 2% by mid-2028; 2026 growth about 1.0%.",
+    "Next decision: December 9."
+  ],
+  "source": "Transcribed from the owner's summary on 2026-10-29. Not yet checked against bankofcanada.ca; the dashboard cross-checks the rate against the Bank of Canada data feed and flags a mismatch."
+}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rate Watch</title>
+<meta name="description" content="Bank of Canada and US Federal Reserve rates, bond yields, inflation and a Canadian housing read, from free public data.">
+<meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rate Watch">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <h1><span class="logo" aria-hidden="true"></span>Rate Watch</h1>
+    <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+    <div class="top-actions">
+      <button id="refresh" class="icon-btn" type="button" aria-label="Refresh data" title="Refresh data">⟳</button>
+      <button id="theme" class="icon-btn" type="button" aria-label="Switch theme" title="Theme">◐</button>
+    </div>
+  </div>
+</header>
+<div id="rangebar" class="rangebar" hidden>
+  <div class="rangebar-in" role="group" aria-label="Chart time range"></div>
+</div>
+<main id="view" tabindex="-1"><p class="loading">Loading…</p></main>
+<nav class="bottom" id="bottom" aria-label="Sections"></nav>
+<noscript><p style="padding:16px">This dashboard needs JavaScript.</p></noscript>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

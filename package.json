@@ -1,0 +1,1 @@
+{"name":"rate-watch","private":true,"type":"module","scripts":{"test":"node --test tests/unit.test.mjs","refresh":"node scripts/refresh.mjs","check":"node scripts/refresh.mjs --check","serve":"node scripts/serve.mjs"}}
