@@ -35,7 +35,8 @@ export async function probe(spec) {
       } else if (kind === 'last') {
         for (const id of arg.split(',')) {
           const j = await httpJson(`${VALET}/observations/${encodeURIComponent(id)}/json?recent=3`);
-          console.log(`» ${id}\t${j.seriesDetail?.[id]?.label}\t${(j.observations ?? []).map((o) => `${o.d}=${o[id]?.v}`).join(' ')}`);
+          const d = j.seriesDetail?.[id];
+          console.log(`» ${id}\t${d?.label}\t${String(d?.description ?? '').slice(0, 90)}\t${(j.observations ?? []).map((o) => `${o.d}=${o[id]?.v}`).join(' ')}`);
         }
       } else if (kind === 'vector') {
         for (const v of arg.split(',')) {
@@ -46,8 +47,12 @@ export async function probe(spec) {
         }
       } else if (kind === 'fred') {
         for (const id of arg.split(',')) {
-          const rows = (await httpText(`https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}`)).trim().split(/\r?\n/);
-          console.log(`» ${id}\t${rows[0]}\t${rows.length - 1} rows\t${rows.slice(-3).join(' ')}`);
+          try {
+            const rows = (await httpText(`https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}`)).trim().split(/\r?\n/);
+            console.log(`» ${id}\t${rows[0]}\t${rows.length - 1} rows\t${rows.slice(-3).join(' ')}`);
+          } catch (e) {
+            console.log(`» ${id}\tnot found`);
+          }
         }
       } else console.log('» unknown probe command');
     } catch (e) {
