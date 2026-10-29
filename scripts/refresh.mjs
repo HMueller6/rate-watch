@@ -64,6 +64,11 @@ async function main() {
   const flag = (n) => args.includes(`--${n}`);
   const opt = (n, d) => (args.includes(`--${n}`) ? args[args.indexOf(`--${n}`) + 1] : d);
 
+  if (process.env.RW_PROBE) {
+    const { probe } = await import('./probe.mjs');
+    await probe(process.env.RW_PROBE);
+  }
+
   if (flag('discover')) {
     const group = opt('discover', '');
     if (group && !group.startsWith('--')) {
