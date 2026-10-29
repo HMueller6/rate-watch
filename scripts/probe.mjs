@@ -10,7 +10,7 @@ import { httpJson } from './lib/util.mjs';
 const VALET = 'https://www.bankofcanada.ca/valet';
 const WDS = 'https://www150.statcan.gc.ca/t1/wds/rest';
 const post = (p, body) => httpJson(`${WDS}/${p}`, { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } });
-const cap = (lines, n = 60) => { lines.slice(0, n).forEach((l) => console.log('  ' + l)); if (lines.length > n) console.log(`  ... ${lines.length - n} more`); if (!lines.length) console.log('  (none)'); };
+const cap = (lines, n = 60) => { lines.slice(0, n).forEach((l) => console.log('» ' + l)); if (lines.length > n) console.log(`» ... ${lines.length - n} more`); if (!lines.length) console.log('» (none)'); };
 
 export async function probe(spec) {
   for (const cmd of spec.split(';;').map((c) => c.trim()).filter(Boolean)) {
@@ -34,18 +34,18 @@ export async function probe(spec) {
       } else if (kind === 'last') {
         for (const id of arg.split(',')) {
           const j = await httpJson(`${VALET}/observations/${encodeURIComponent(id)}/json?recent=3`);
-          console.log(`  ${id}\t${j.seriesDetail?.[id]?.label}\t${(j.observations ?? []).map((o) => `${o.d}=${o[id]?.v}`).join(' ')}`);
+          console.log(`» ${id}\t${j.seriesDetail?.[id]?.label}\t${(j.observations ?? []).map((o) => `${o.d}=${o[id]?.v}`).join(' ')}`);
         }
       } else if (kind === 'vector') {
         for (const v of arg.split(',')) {
           const info = await post('getSeriesInfoFromVector', [{ vectorId: Number(v) }]);
           const data = await post('getDataFromVectorsAndLatestNPeriods', [{ vectorId: Number(v), latestN: 3 }]);
           const pts = data?.[0]?.object?.vectorDataPoint ?? [];
-          console.log(`  v${v}\t${info?.[0]?.object?.SeriesTitleEn}\t${info?.[0]?.object?.productId}\t${pts.map((p) => `${p.refPer}=${p.value}`).join(' ')}`);
+          console.log(`» v${v}\t${info?.[0]?.object?.SeriesTitleEn}\t${info?.[0]?.object?.productId}\t${pts.map((p) => `${p.refPer}=${p.value}`).join(' ')}`);
         }
       } else console.log('  unknown probe command');
     } catch (e) {
-      console.log('  ERROR ' + e.message);
+      console.log('» ERROR ' + e.message);
     }
   }
 }
