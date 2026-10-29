@@ -98,6 +98,30 @@ for (const [vpName, viewport, extra] of [['phone', { width: 390, height: 844 }, 
     await ctx.close();
   }
 }
+// GitHub Pages serves the app under /rate-watch/: everything (data, service worker, manifest, icons) must work from a sub-path
+{
+  const { createServer } = await import('node:http');
+  const sub = createServer((req, res) => {
+    if (req.url.startsWith('/rate-watch/')) { req.url = req.url.slice('/rate-watch'.length); server.emit('request', req, res); } else res.writeHead(404).end('outside the sub-path');
+  });
+  await new Promise((r) => sub.listen(0, '127.0.0.1', r));
+  const subBase = `http://127.0.0.1:${sub.address().port}/rate-watch/`;
+  console.log('\nserved from a sub-path');
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'allow' });
+  const page = await ctx.newPage();
+  const bad = [];
+  page.on('response', (r) => { if (r.status() >= 400) bad.push(`${r.status()} ${r.url()}`); });
+  page.on('pageerror', (e) => bad.push(e.message));
+  await page.goto(`${subBase}#/canada`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('main .chart svg');
+  check(await page.locator('main .chart svg').count() >= 12, 'sub-path: Canada charts render');
+  check(await page.evaluate(async () => (await navigator.serviceWorker.ready).scope.endsWith('/rate-watch/')), 'sub-path: service worker scope is /rate-watch/');
+  check(await page.evaluate(async () => { const m = await (await fetch('manifest.webmanifest')).json(); const r = await fetch(new URL(m.icons[0].src, location.href)); return r.ok && new URL(m.start_url, location.href).pathname === '/rate-watch/'; }), 'sub-path: manifest start_url and icons resolve');
+  check(bad.length === 0, 'sub-path: no failed requests or errors' + (bad[0] ? ': ' + bad[0] : ''));
+  await ctx.close();
+  sub.close();
+}
+
 // feed lagging the announcement: it shows 2.25% dated Oct 28; the app must show the announced 2.50% with a 'pending' note, not an error
 {
   const { readFileSync, writeFileSync } = await import('node:fs');

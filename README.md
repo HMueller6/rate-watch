@@ -28,14 +28,15 @@ Hand-maintained files in `data/`: `announcement.json` (the Oct 28 decision and n
 
 ## Putting it on your phone
 
-An installable web app needs HTTPS. Any static host works. The data is fetched when the site is **built**, so the build command is what refreshes it:
+The site is published with **GitHub Pages**, refreshed automatically by `.github/workflows/pages.yml` (free for a public repo).
 
-- Host: Render, Netlify, Cloudflare Pages or Vercel (static site, publish directory `dist`)
-- Build command: `node scripts/refresh.mjs --min-ok 0.3 ; rm -rf dist && mkdir dist && cp -r index.html sw.js manifest.webmanifest css js data icons dist/`
-- Node 18 or newer (set `NODE_VERSION=22` where needed)
-- Optional: set `FRED_API_KEY` as an environment variable to use the official FRED API
+**One-time setup:** repo **Settings → Pages → Build and deployment → Source: "GitHub Actions"**. Then run the workflow once (Actions tab → "Publish site" → Run workflow). The site appears at `https://<your-username>.github.io/rate-watch/`.
 
-The data is only as fresh as the last build, so trigger a redeploy (or schedule one on your host) whenever you want new numbers.
+After that it rebuilds every 6 hours on weekdays, and whenever the app code changes. The data is downloaded fresh on each run; if fewer than 80% of series load, nothing is published and the previous version stays up. Notes:
+- GitHub can delay scheduled runs a little, and pauses them after about 60 days with no repo activity (re-enable in the Actions tab).
+- Optional: add a `FRED_API_KEY` repository secret to use the official FRED API instead of the keyless download.
+
+Any other static host also works (build command: `node scripts/refresh.mjs --min-ok 0.3`, then publish `index.html sw.js manifest.webmanifest css js data icons`), but it needs its own way to rebuild on a schedule.
 
 Then on iPhone: Share → Add to Home Screen. On Android/Chrome: menu → Install app. Offline, it shows the last data it loaded.
 

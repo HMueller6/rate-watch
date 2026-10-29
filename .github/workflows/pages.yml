@@ -1,0 +1,49 @@
+# Refreshes the data and publishes the site to GitHub Pages.
+# One-time setup: repo Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+name: Publish site
+
+on:
+  schedule:
+    - cron: '17 */6 * * 1-5'   # every 6 hours on weekdays (UTC); GitHub may delay scheduled runs a little
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['index.html', 'sw.js', 'manifest.webmanifest', 'css/**', 'js/**', 'data/*.json', 'icons/**', 'scripts/**']
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unit tests
+        run: node --test tests/unit.test.mjs
+      - name: Fetch data (fails, and publishes nothing, if fewer than 80% of series load)
+        run: node scripts/refresh.mjs --min-ok 0.8
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}   # optional; the keyless FRED download is used when empty
+      - name: Assemble site
+        run: |
+          mkdir dist
+          cp -r index.html sw.js manifest.webmanifest css js data icons dist/
+          ls -la dist/data
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
