@@ -2,7 +2,7 @@
 // Commands are separated by ";;"  (regexes may contain commas):
 //   series:<regex>     Bank of Canada Valet series whose id or label matches
 //   groups:<regex>     Valet groups whose name or label matches
-//   group:<name>       series in one Valet group
+//   group:<name>[~re]  series in one Valet group, optionally only those whose label matches re
 //   last:<id,id>       label and last observations of Valet series
 //   vector:<id,id>     StatCan vector title and last observations
 import { httpJson } from './lib/util.mjs';
@@ -27,8 +27,10 @@ export async function probe(spec) {
         const j = await httpJson(`${VALET}/lists/groups/json`);
         cap(Object.entries(j.groups ?? {}).filter(([n, g]) => re.test(n) || re.test(g.label ?? '')).map(([n, g]) => `${n}\t${g.label}`));
       } else if (kind === 'group') {
-        const j = await httpJson(`${VALET}/observations/group/${encodeURIComponent(arg)}/json?recent=1`);
-        cap(Object.entries(j.seriesDetail ?? {}).map(([id, d]) => `${id}\t${d.label}`), 80);
+        const [name, filter] = arg.split('~');
+        const re = new RegExp(filter || '.', 'i');
+        const j = await httpJson(`${VALET}/observations/group/${encodeURIComponent(name)}/json?recent=1`);
+        cap(Object.entries(j.seriesDetail ?? {}).filter(([id, d]) => re.test(id) || re.test(d.label ?? '')).map(([id, d]) => `${id}\t${d.label}`), 25);
       } else if (kind === 'last') {
         for (const id of arg.split(',')) {
           const j = await httpJson(`${VALET}/observations/${encodeURIComponent(id)}/json?recent=3`);
