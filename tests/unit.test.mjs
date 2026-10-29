@@ -285,3 +285,16 @@ test('a feed that carries the old rate forward under the announcement date is pe
   const eff2 = A.effectivePolicy([...feed, ['2026-10-30', 2.25]], ann);
   assert.deepEqual(A.last(eff2), ['2026-10-30', 2.5]);
 });
+
+test('staleness uses realistic publication lags', () => {
+  const today = '2026-10-29';
+  const st = (asOf, freq, extra = {}) => A.isStale({ asOf, freq, ...extra }, today);
+  assert.equal(st('2026-01-01', 'q'), false);   // Treasury-holder data dated Q1 is routinely ~10 months behind
+  assert.equal(st('2026-10-20', 'd'), false);   // exchange rates post weekly, with a lag
+  assert.equal(st('2026-10-01', 'd'), true);    // a daily series 4 weeks old has stopped
+  assert.equal(st('2026-08-01', 'm'), false);   // monthly, dated the 1st, published ~6 weeks later
+  assert.equal(st('2026-04-01', 'm'), true);
+  assert.equal(st('2025-08-01', 'q'), true);    // over a year old
+  assert.equal(st('2026-10-28', 'd', { stale: true }), true); // refresh failed, old copy kept
+  assert.equal(A.isStale(null, today), false);
+});

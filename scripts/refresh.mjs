@@ -12,6 +12,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATALOG, START_DATE } from './lib/catalog.mjs';
+import { isStale } from '../js/analytics.js';
 import { fetchValet, listGroups, listGroupSeries } from './lib/valet.mjs';
 import { fetchStatcan } from './lib/statcan.mjs';
 import { fetchFred } from './lib/fred.mjs';
@@ -112,6 +113,11 @@ async function main() {
   console.log(rows.join('\n'));
   const fresh = specs.filter((s) => series[s.key] && !series[s.key].stale).length;
   console.log(`\n${fresh}/${specs.length} series loaded fresh in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const stale = specs.filter((s) => series[s.key] && isStale(series[s.key], today));
+  const failedReq = errors.filter((e) => !e.optional && !series[e.key]);
+  console.log(`dashboard banner: ${failedReq.length} required series failed, ${stale.length} flagged stale${stale.length ? ' (' + stale.map((s) => `${s.key} as of ${series[s.key].asOf}`).join(', ') + ')' : ''}`);
 
   if (fresh / specs.length < minOk) {
     console.error(`Fewer than ${Math.round(minOk * 100)}% of series loaded; not writing output.`);

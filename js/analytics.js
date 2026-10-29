@@ -95,6 +95,20 @@ export function diff(pts) {
   return pts.slice(1).map(([d, v], i) => [d, v - pts[i][1]]);
 }
 
+// ---- Staleness ------------------------------------------------------------------------------
+
+// Days after which a series' latest observation counts as out of date, by cadence (d/w/m/q).
+// Generous on purpose: monthly and quarterly points are dated the 1st of their period and published weeks to months
+// later, and several "daily" FRED series (e.g. exchange rates) are only posted weekly.
+export const STALE_DAYS = { d: 10, w: 28, m: 130, q: 400 };
+
+export function isStale(meta, today) {
+  if (!meta) return false;
+  if (meta.stale) return true; // the last refresh failed and an older copy was kept
+  const age = (toMs(today) - toMs(meta.asOf)) / 864e5;
+  return age > (STALE_DAYS[meta.freq] ?? 120);
+}
+
 // ---- Policy-rate reconciliation ------------------------------------------------------------
 
 // Compare the data feed's latest policy rate with the announcement we were told about.

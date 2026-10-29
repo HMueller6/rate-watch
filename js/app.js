@@ -119,15 +119,8 @@ async function load() {
   buildSeries();
 }
 
-// freshness: series are flagged stale when their latest observation is much older than their cadence implies
-// monthly figures are dated the 1st of their month and published weeks later, so ~3 months old is still current
-const STALE_DAYS = { d: 7, w: 21, m: 110, q: 290 };
-function isStale(key) {
-  const m = meta(key);
-  if (!m) return false;
-  const age = (A.toMs(todayISO()) - A.toMs(m.asOf)) / 864e5;
-  return m.stale || age > (STALE_DAYS[m.freq] ?? 90);
-}
+// freshness: a series is flagged when its latest observation is much older than its cadence implies (see analytics.js)
+const isStale = (key) => A.isStale(meta(key), todayISO());
 
 // ---------- building blocks ----------
 function tile({ label, pts, base, d = 2, suffix = '%', delta = 'prior', deltaLabel, money: isMoney, scale = 1 }) {
