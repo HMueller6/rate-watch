@@ -6,6 +6,7 @@ const BASE = 'https://www.bankofcanada.ca/valet';
 // Valet observations look like: { d: '2026-10-28', V39079: { v: '2.5' } }
 export function parseValet(json, id) {
   const label = json?.seriesDetail?.[id]?.label ?? '';
+  const description = json?.seriesDetail?.[id]?.description ?? '';
   const points = [];
   for (const o of json?.observations ?? []) {
     const v = o?.[id]?.v;
@@ -13,7 +14,7 @@ export function parseValet(json, id) {
     if (typeof o.d === 'string' && isFiniteNum(n)) points.push([o.d, n]);
   }
   points.sort((a, b) => (a[0] < b[0] ? -1 : 1));
-  return { label, points };
+  return { label, description, points };
 }
 
 async function observations(id, startDate) {
@@ -51,8 +52,8 @@ export async function fetchValet(spec, startDate) {
       continue;
     }
     try {
-      const { label, points } = await observations(id, startDate);
-      if (!spec.expect.test(label)) tried.push(`${id}: label "${label}" does not match ${spec.expect}`);
+      const { label, description, points } = await observations(id, startDate);
+      if (!spec.expect.test(`${label} ${description}`)) tried.push(`${id}: "${label}" (${description.slice(0, 60)}) does not match ${spec.expect}`);
       else if (!points.length) tried.push(`${id}: no observations`);
       else return { id, label, points };
     } catch (e) {

@@ -32,9 +32,22 @@ export const CATALOG = [
   valet('ca_cpi_median', 'CPI-median (core), year over year', ['CPI_MEDIAN'], /median/i, { sane: [-5, 25] }),
   valet('ca_cpi_common', 'CPI-common (core), year over year', ['CPI_COMMON'], /common/i, { sane: [-5, 25], optional: true }),
 
+  // Canadian banks, the Bank of Canada balance sheet and household credit performance (counterparts of the US bank charts)
+  valet('ca_boc_assets', 'Bank of Canada total assets ($ millions)', ['V36610'], /total assets/i,
+    { group: 'B2_WEEKLY', daily: true, unit: '$mn', sane: [20000, 2000000], optional: true }),
+  valet('ca_bank_mortgages', 'Chartered banks: residential mortgage loans, Canadian-dollar ($ millions)', ['V36857'], /mortgages/i,
+    { group: 'C1_MONTHLY', unit: '$mn', sane: [300000, 20000000], optional: true }),
+  valet('ca_bank_nonmortgage', 'Chartered banks: non-mortgage loans, Canadian-dollar ($ millions)', ['V36855'], /non-mortgage loans/i,
+    { group: 'C1_MONTHLY', unit: '$mn', sane: [300000, 20000000], optional: true }),
+  valet('ca_arrears_mtg', 'Mortgage arrears rate (Bank of Canada financial vulnerabilities indicator)', ['FVI_LOANS_ARR_MTG'], /mortgage/i,
+    { group: 'FVI_HOUSEHOLD_CREDIT_PERFORMANCE', sane: [0, 10], optional: true }),
+  valet('ca_rrb', 'GoC real return bond yield, long-term', ['BD.CDN.RRB.DQ.YLD'], /real return/i,
+    { group: 'bond_yields_benchmark', daily: true, sane: [-3, 10], optional: true }),
+
   // ---- Statistics Canada (WDS) ----
   statcan('ca_cpi_index', 'CPI, all-items, Canada (2002=100)', 41690973, /canada.*all-items/i, [40, 500]),
   statcan('ca_unemp', 'Unemployment rate, Canada (seasonally adjusted)', 2062815, /unemployment rate/i, [1, 30], { unit: '%' }),
+  statcan('ca_employment', 'Employment, Canada (thousands, seasonally adjusted)', 2062811, /employment;.*seasonally adjusted/i, [10000, 40000], { unit: 'thousands', optional: true }),
   statcan('ca_nhpi', 'New housing price index, Canada total', 111955442, /canada.*house and land/i, [10, 400]),
   // housing starts: StatCan gives only the geography as a title, so this one is range-checked only (expect = null)
   statcan('ca_starts', 'Housing starts, Canada (thousands of units, annualised)', 52300157, null, [100, 800], { unit: 'thousand units', optional: true }),

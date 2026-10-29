@@ -44,6 +44,9 @@ const fmtPts = (v, full) => (full ? signed(v) : String(+v.toFixed(2))) + (full ?
 const fmtInt = (v) => Math.round(v).toLocaleString('en-CA');
 const fmtMoneyPer = (v, full) => (full ? '$' + v.toFixed(2) : '$' + +v.toFixed(0));
 const fmtTn = (v, full) => '$' + (full ? v.toFixed(2) : +v.toFixed(1)) + 'T';
+const fmtK = (v, full) => (full ? signedPlain(v, 1) : String(Math.round(v))) + 'k';
+const fmtBn = (v, full) => '$' + (full ? v.toFixed(1) : String(Math.round(v))) + 'B';
+const signedPlain = (v, d) => v.toLocaleString('en-CA', { minimumFractionDigits: d, maximumFractionDigits: d });
 const fmtCad = (v, full) => (full ? v.toFixed(4) : String(+v.toFixed(2)));
 
 // ---------- state ----------
@@ -96,6 +99,11 @@ function buildSeries() {
   if (S.us_walcl) set('us_walcl_tn', () => S.us_walcl.map(([d, v]) => [d, v / 1e6]));
   if (S.ca_y10 && S.ca_y2) set('ca_10_2', () => A.spread(S.ca_y10, S.ca_y2));
   if (S.ca_y10 && S.us_y10) set('ca_us10', () => A.spread(S.ca_y10, S.us_y10));
+  if (S.ca_employment) set('ca_employment_chg', () => A.diff(S.ca_employment));
+  if (S.ca_bank_mortgages) set('ca_bank_mortgages_yoy', () => A.yoy(S.ca_bank_mortgages));
+  if (S.ca_bank_nonmortgage) set('ca_bank_nonmortgage_yoy', () => A.yoy(S.ca_bank_nonmortgage));
+  if (S.ca_boc_assets) set('ca_boc_assets_bn', () => S.ca_boc_assets.map(([d, v]) => [d, v / 1e3]));
+  if (S.ca_y30 && S.ca_rrb) set('ca_breakeven', () => A.spread(S.ca_y30, S.ca_rrb));
   if (S.ca_y5) set('ca_fixed_est', () => A.addConst(S.ca_y5, st.calc.spread));
   st.S = S;
 }
@@ -113,7 +121,7 @@ async function load() {
 
 // freshness: series are flagged stale when their latest observation is much older than their cadence implies
 // monthly figures are dated the 1st of their month and published weeks later, so ~3 months old is still current
-const STALE_DAYS = { d: 7, w: 21, m: 110, q: 200 };
+const STALE_DAYS = { d: 7, w: 21, m: 110, q: 290 };
 function isStale(key) {
   const m = meta(key);
   if (!m) return false;
@@ -347,8 +355,8 @@ function viewCanada() {
   return [
     ...banners(),
     lineCard({
-      title: 'Policy rate and prime', sub: 'Overnight target set by the Bank of Canada; prime follows it.', step: true, base: 'ca_policy', yFormat: fmtPct,
-      series: [{ label: 'Policy rate', points: get('ca_policy') }, { label: 'Prime rate', points: get('ca_prime') }],
+      title: 'Policy rate and prime', sub: 'Overnight target set by the Bank of Canada; prime follows it. CORRA is the overnight repo rate.', step: true, base: 'ca_policy', yFormat: fmtPct,
+      series: [{ label: 'Policy rate', points: get('ca_policy') }, { label: 'Prime rate', points: get('ca_prime') }, { label: 'CORRA', points: get('ca_corra'), step: false }],
     }),
     curveCard({
       title: 'Government of Canada yield curve', sub: 'Benchmark bond yields by maturity.',
@@ -356,17 +364,33 @@ function viewCanada() {
       snaps: SNAPS,
     }),
     lineCard({
-      title: 'Benchmark yields', sub: 'Fixed mortgage rates follow the 5-year yield.', base: 'ca_y5', yFormat: fmtPct,
-      series: [{ label: '2-year', points: get('ca_y2') }, { label: '5-year', points: get('ca_y5') }, { label: '10-year', points: get('ca_y10') }],
+      title: 'Government of Canada yields', sub: 'Fixed mortgage rates follow the 5-year yield.', base: 'ca_y10', yFormat: fmtPct,
+      series: [{ label: '2-year', points: get('ca_y2') }, { label: '10-year', points: get('ca_y10') }, { label: 'Long-term', points: get('ca_y30') }],
     }),
     lineCard({
-      title: 'Inflation', sub: 'Bank of Canada target: 2%, inside a 1–3% control range.', base: 'ca_cpi_trim', yFormat: fmtPct,
+      title: 'Inflation', sub: 'Year over year. Bank of Canada target: 2%, inside a 1–3% control range.', base: 'ca_cpi_trim', yFormat: fmtPct,
       refLines: [{ y: 2, label: '2% target' }, { y: 3, label: '3%' }],
-      series: [{ label: 'CPI (y/y)', points: get('ca_cpi_yoy') }, { label: 'CPI-trim', points: get('ca_cpi_trim') }, { label: 'CPI-median', points: get('ca_cpi_median') }],
+      series: [{ label: 'CPI', points: get('ca_cpi_yoy') }, { label: 'CPI-trim', points: get('ca_cpi_trim') }, { label: 'CPI-median', points: get('ca_cpi_median') }, { label: 'CPI-common', points: get('ca_cpi_common') }],
     }),
     lineCard({ title: 'Unemployment rate', sub: 'Seasonally adjusted.', base: 'ca_unemp', yFormat: fmtPct, series: [{ label: 'Canada', points: get('ca_unemp') }] }),
+    lineCard({ title: 'Employment, monthly change', sub: 'Thousands of jobs, seasonally adjusted (Labour Force Survey).', base: 'ca_employment', yFormat: fmtK, refLines: [{ y: 0, label: '0' }], series: [{ label: 'Change', points: get('ca_employment_chg') }] }),
+    lineCard({
+      title: '5-year fixed mortgage rate', sub: 'Posted by the big banks (what discounted rates are measured against) and an estimate of a typical discounted rate.', base: 'ca_y5', yFormat: fmtPct,
+      series: [{ label: 'Posted 5-year', points: get('ca_mort5_posted') }, { label: 'Estimated discounted', points: get('ca_fixed_est') }],
+    }),
     lineCard({ title: 'New housing price index, y/y', sub: 'New homes only (house and land); lags resale prices.', base: 'ca_nhpi', yFormat: fmtPct, refLines: [{ y: 0, label: '0%' }], series: [{ label: 'Canada', points: get('ca_nhpi_yoy') }] }),
-    lineCard({ title: 'Housing starts', sub: 'Thousands of units, annualised (CMHC via Statistics Canada).', base: 'ca_starts', yFormat: (v, full) => (full ? v.toFixed(1) : String(Math.round(v))) + 'k', series: [{ label: 'Starts', points: get('ca_starts') }] }),
+    lineCard({ title: 'Housing starts', sub: 'Thousands of units, annualised (CMHC via Statistics Canada).', base: 'ca_starts', yFormat: fmtK, series: [{ label: 'Starts', points: get('ca_starts') }] }),
+    h('h2', { class: 'section' }, 'Canadian banks and the Bank of Canada'),
+    lineCard({ title: 'Bank of Canada balance sheet', sub: 'Total assets, billions of dollars, weekly.', base: 'ca_boc_assets', yFormat: fmtBn, series: [{ label: 'Total assets', points: get('ca_boc_assets_bn') }] }),
+    lineCard({
+      title: 'Bank loan growth', sub: 'Chartered banks, Canadian-dollar loans, year over year.', base: 'ca_bank_mortgages', yFormat: fmtPct, refLines: [{ y: 0, label: '0%' }],
+      series: [{ label: 'Mortgage loans', points: get('ca_bank_mortgages_yoy') }, { label: 'Non-mortgage loans', points: get('ca_bank_nonmortgage_yoy') }],
+    }),
+    lineCard({
+      title: 'Mortgage delinquency at banks', sub: 'Residential mortgages, share in arrears (Bank of Canada financial vulnerabilities indicator, quarterly).', base: 'ca_arrears_mtg', yFormat: fmtPct,
+      series: [{ label: 'Mortgage arrears', points: get('ca_arrears_mtg') }], source: 'Not directly comparable with the US share-past-due measure.',
+    }),
+    h('p', { class: 'small' }, 'Credit spreads: the US tab shows a high-yield spread. No free, current Canadian equivalent was found (the Bank of Canada only publishes old chart snapshots), so none is shown.'),
   ];
 }
 
@@ -446,7 +470,10 @@ function viewBonds() {
     lineCard({ title: '10-year yield: Canada vs US', base: 'ca_y10', yFormat: fmtPct, series: [{ label: 'Canada 10y', points: get('ca_y10') }, { label: 'US 10y', points: get('us_y10') }] }),
     lineCard({ title: 'Canada minus US, 10-year', sub: 'Negative means Canadian yields are below US yields.', base: 'ca_y10', yFormat: fmtPts, refLines: [{ y: 0, label: '0' }], series: [{ label: 'CA − US', points: get('ca_us10') }] }),
     lineCard({ title: 'Curve slope: 10-year minus 2-year', sub: 'Below zero = inverted curve, historically a slowdown signal.', base: 'ca_y10', yFormat: fmtPts, refLines: [{ y: 0, label: '0' }], series: [{ label: 'Canada', points: get('ca_10_2') }, { label: 'US', points: get('us_10y2y') }] }),
-    lineCard({ title: 'US 10-year breakeven inflation', sub: 'Inflation the bond market is pricing in over ten years.', base: 'us_be10', yFormat: fmtPct, series: [{ label: 'Breakeven', points: get('us_be10') }] }),
+    lineCard({
+      title: 'Breakeven inflation', sub: 'Inflation the bond market is pricing in: US 10-year, and Canada long-term (nominal minus real-return bond yield).', base: 'us_be10', yFormat: fmtPct,
+      series: [{ label: 'US 10-year', points: get('us_be10') }, { label: 'Canada long-term', points: get('ca_breakeven') }],
+    }),
     holdersCard(),
     ...playersCards(),
   ];

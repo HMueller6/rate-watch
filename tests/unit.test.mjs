@@ -133,6 +133,7 @@ test('parseValet reads observations and drops blanks', () => {
   const r = parseValet(j, 'V39079');
   assert.equal(r.label, 'Target for the overnight rate');
   assert.deepEqual(r.points, [['2026-10-27', 2.25], ['2026-10-28', 2.5]]);
+  assert.equal(r.description, '');
 });
 
 test('parseFredCsv handles both header styles and missing "." values', () => {
@@ -252,5 +253,17 @@ test('catalog is well-formed: no holes, unique keys, every entry has what its fe
     if (s.source === 'fred') assert.ok(typeof s.id === 'string', `${s.key}: fred id`);
     assert.ok(['valet', 'statcan', 'fred'].includes(s.source), `${s.key}: source`);
   });
-  assert.equal(CATALOG.length, 43);
+  assert.equal(CATALOG.length, 49);
+});
+
+test('Valet series labelled just "Total" are identified by their description', async () => {
+  const j = { seriesDetail: { V36857: { label: 'Total', description: 'Canadian dollar assets - Less liquid assets - Mortgages' }, V36855: { label: 'Total', description: 'Canadian dollar assets - Less liquid assets - Non-mortgage loans' } },
+    observations: [{ d: '2026-08-01', V36857: { v: '1841357' }, V36855: { v: '1815256' } }] };
+  const restore = (() => { const real = globalThis.fetch; globalThis.fetch = async (url) => new Response(JSON.stringify(j)); return () => { globalThis.fetch = real; }; })();
+  try {
+    assert.equal((await fetchValet({ ids: ['V36857'], expect: /mortgages/i }, '1990-01-01')).points[0][1], 1841357);
+    // the non-mortgage series also contains the word "mortgage" in its description, so a loose pattern would accept the wrong series;
+    // the catalog uses /non-mortgage loans/ for that one, and /mortgages/ (plural) for the mortgage one
+    await assert.rejects(fetchValet({ ids: ['V36857'], expect: /non-mortgage loans/i }, '1990-01-01'), /does not match/);
+  } finally { restore(); }
 });

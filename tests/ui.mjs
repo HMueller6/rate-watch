@@ -44,7 +44,7 @@ for (const [vpName, viewport, extra] of [['phone', { width: 390, height: 844 }, 
       const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, cards: document.querySelectorAll('main .card').length, svgs: document.querySelectorAll('main .chart svg').length, tiles: document.querySelectorAll('.tile').length }));
       check(m.sw <= m.iw, `${tab}: no horizontal overflow (${m.sw} <= ${m.iw})`);
       check(m.cards > 0, `${tab}: ${m.cards} cards, ${m.svgs} charts, ${m.tiles} tiles`);
-      const minCharts = { canada: 7, us: 11, bonds: 4, housing: 2 }[tab];
+      const minCharts = { canada: 12, us: 11, bonds: 4, housing: 2 }[tab];
       if (minCharts) check(m.svgs >= minCharts, `${tab}: at least ${minCharts} charts rendered`);
       await page.screenshot({ path: join(shots, `${vpName}-${scheme}-${tab}.png`), fullPage: true });
     }
@@ -78,6 +78,10 @@ for (const [vpName, viewport, extra] of [['phone', { width: 390, height: 844 }, 
       const ov = await page.locator('main').innerText();
       check(/2\.50%/.test(ov) && /4\.70%/.test(ov), 'overview shows 2.50% policy and 4.70% prime');
       check(/Dec 9/.test(ov), 'overview shows next decision Dec 9');
+      await page.goto(`${base}#/canada`, { waitUntil: 'networkidle' });
+      const ca = await page.locator('main').innerText();
+      for (const t of ['Mortgage delinquency at banks', 'Bank of Canada balance sheet', 'Bank loan growth', 'Employment, monthly change', '5-year fixed mortgage rate', 'No free, current Canadian equivalent']) check(ca.includes(t), `canada tab has: ${t}`);
+      await page.goto(`${base}#/overview`, { waitUntil: 'networkidle' });
       check(/SYNTHETIC TEST DATA/.test(ov), 'synthetic banner visible');
       check(/Matches Bank of Canada data/.test(ov), 'announcement reconciles with (synthetic) feed');
       // installability + offline
